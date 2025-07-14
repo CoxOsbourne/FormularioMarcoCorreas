@@ -35,6 +35,9 @@ namespace FormularioMarcoCorreas
         [StructuresField("PurlinMaterial")]
         public string PurlinMaterial;
 
+        //faltan variables aquí
+        //missing variables here
+
         #endregion
     }
 

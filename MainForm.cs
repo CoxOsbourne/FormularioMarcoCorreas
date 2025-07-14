@@ -108,12 +108,13 @@ namespace FormularioMarcoCorreas
                 string materialFrame = textBoxFrameMaterial.Text;
                 string profileCorrea = textBoxProfileCorrea.Text;
                 string materialCorrea=textBoxCorreaMaterial.Text;
+                double alturaPlano = 3000;
 
                 // Calcular offset en Z para alinear alas superiores
                 //z-axis offset to align upper beam wings
                 (double hMarco, _) = GetProfileDimensions(profileFrame);
                 (double hCorrea, _) = GetProfileDimensions(profileCorrea);
-                double offsetZ = hMarco - hCorrea;
+                double offsetCorreas = hMarco - hCorrea;
                 
                 TSM.Model model = new TSM.Model();
 
@@ -125,7 +126,8 @@ namespace FormularioMarcoCorreas
                 TSG.Point point4 = new TSG.Point(0, lengthFrame, 0);
                 
                 CrearMarcoConBiseles(widthFrame, lengthFrame, profileFrame, materialFrame);
-                CrearCorreas(widthFrame, lengthFrame, profileCorrea, materialCorrea, offsetZ);
+                CrearCorreas(widthFrame, lengthFrame, profileCorrea, materialCorrea, offsetCorreas);
+                CrearMarcoElevadoConCorreas(widthFrame,lengthFrame,profileFrame, materialFrame,alturaPlano,offsetCorreas,profileCorrea,materialCorrea);
                 model.CommitChanges();
                 //MessageBox.Show("Marco creado correctamente.");
 
@@ -257,7 +259,7 @@ namespace FormularioMarcoCorreas
 
             return (profileHeight, profileWidth);
         }
-        private void CrearCorreas(double widthFrame, double lengthFrame, string profile, string material, double offsetZ)
+        private void CrearCorreas(double widthFrame, double lengthFrame, string profile, string material, double offsetCorreas)
         {
             TSM.Model model = new TSM.Model();
 
@@ -270,7 +272,7 @@ namespace FormularioMarcoCorreas
                 TSG.Point start = new TSG.Point(0, y,0);
                 TSG.Point end = new TSG.Point(widthFrame, y,0);
 
-                CreateBeam(start, end, profile, material, "CORREA", offsetZ);
+                CreateBeam(start, end, profile, material, "CORREA", offsetCorreas);
             }
 
             model.CommitChanges();
@@ -298,6 +300,37 @@ namespace FormularioMarcoCorreas
                 Console.WriteLine($"No se pudo insertar plano de corte en {origin}");
             }
         }
+
+        //cambio de plano de trabajo
+        //change of workplane
+        private void CrearMarcoElevadoConCorreas(double widthFrame, double lengthFrame, string profile, string material, double alturaZ, double offsetCorreas, string profileCorrea, string materialCorrea)
+        {
+            TSM.Model model = new TSM.Model();
+            WorkPlaneHandler wph = model.GetWorkPlaneHandler();
+
+            // Guardar el plano de trabajo actual
+            TransformationPlane originalPlane = wph.GetCurrentTransformationPlane();
+
+            // Crear nuevo plano trasladado en Z
+            TransformationPlane planoElevado = new TransformationPlane(
+                new CoordinateSystem(
+                    new TSG.Point(0, 0, alturaZ),       // origen nuevo plano
+                    new TSG.Vector(1, 0, 0),            // eje X igual
+                    new TSG.Vector(0, 1, 0)             // eje Y igual
+                )
+            );
+
+            // Cambiar al nuevo plano
+            wph.SetCurrentTransformationPlane(planoElevado);
+
+            // Insertar marco en el nuevo plano
+            CrearMarcoConBiseles(widthFrame, lengthFrame, profile, material);
+            CrearCorreas(widthFrame, lengthFrame, profileCorrea, materialCorrea, offsetCorreas);
+
+            // Restaurar plano original
+            wph.SetCurrentTransformationPlane(originalPlane);
+        }
+
 
         private void profileCatalogCorreaSelectClicked(object sender, EventArgs e)
         {
